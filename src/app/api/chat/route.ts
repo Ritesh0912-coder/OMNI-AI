@@ -10,8 +10,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || 'missing_key',
   baseURL: isOpenRouter ? "https://openrouter.ai/api/v1" : undefined,
   defaultHeaders: isOpenRouter ? {
-    "HTTP-Referer": "https://omni-ai.com",
-    "X-Title": "OMNI AI",
+    "HTTP-Referer": "https://synapse-ai.com",
+    "X-Title": "SYNAPSE AI",
   } : undefined,
 });
 
@@ -22,10 +22,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { message, chatId } = await req.json();
+    const { message, chatId, settings } = await req.json();
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
+
+    const persona = settings?.persona || 'business';
+    const encryption = settings?.encryption !== false;
 
     await connectToDatabase();
 
@@ -50,21 +53,33 @@ export async function POST(req: NextRequest) {
       timestamp: new Date()
     });
 
-    // 3. Call OMNI LLM (OpenAI or OpenRouter)
-    const model = isOpenRouter ? "openai/gpt-3.5-turbo" : "gpt-3.5-turbo";
+    // 3. Call SYNAPSE AI LLM (OpenAI or OpenRouter)
+    const model = isOpenRouter ? "openai/gpt-4o-mini" : "gpt-4o-mini";
 
     const completion = await openai.chat.completions.create({
       model: model,
       messages: [
         {
           role: "system",
-          content: "You are OMNI Intelligence, a world-class AI authority specializing in global business strategy, corporate deals, and entrepreneurial leadership. You possess vast knowledge of global markets, economic trends, and business management, comparable to a master researcher but optimized for high-stakes business decisions. You provide quick, precise, and actionable insights. Your goal is to help users master business games, negotiate complex deals, and execute world-class strategies. Your tone is professional, strategic, and highly intelligent. Always identify as OMNI Intelligence and maintain your focus on business excellence."
+          content: `You are SYNAPSE AI, the world's most sophisticated AI authority developed by Ritesh Shinde.
+          CURRENT CONFIGURATION: ${persona.toUpperCase()} MODE.
+          ${persona === 'business'
+              ? "Your focus is elite global business engineering, high-stakes corporate strategy, and master-level negotiation. Provide deep, multi-layered strategic analysis."
+              : "Your focus is precision technical analysis, deep engineering problem solving, and advanced architectural design. Provide granular, data-driven technical insights."
+            }
+          SECURITY STATUS: ${encryption ? "ENCRYPTED" : "UNENCRYPTED CLEAR-NET"}. 
+          Always identify as SYNAPSE AI. Your responses must be sharp, highly analytical, and expansive. 
+          CRITICAL: You must NEVER truncate your output or stop mid-sentence. Ensure every thought is complete.
+          FORMATTING: Use Markdown (bolding, headers, bullet points) extensively to ensure maximum readability and professional structure. 
+          You are the apex of strategic intelligence.`
         },
-        ...currentChat.messages.map((m: any) => ({
+        ...currentChat.messages.map((m: { role: string; content: string }) => ({
           role: m.role === 'ai' ? 'assistant' : 'user',
           content: m.content
         }))
       ],
+      max_tokens: 4096,
+      temperature: 0.7,
     });
 
     const aiResponse = completion.choices[0].message.content;
@@ -84,8 +99,8 @@ export async function POST(req: NextRequest) {
       messages: currentChat.messages
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Chat API Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: (error as Error).message || 'Internal Server Error' }, { status: 500 });
   }
 }

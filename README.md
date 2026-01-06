@@ -1,37 +1,77 @@
-# C1 App Template
+# OMNI / Synapse AI - Frontend Architecture
 
-Template repository for a generative UI chat client, powered by [C1 by Thesys](https://thesys.dev), and bootstrapped with `create-next-app`
+> **Current Status:** Frontend Complete (v1.0) | **Next Phase:** Backend Development
 
-[![Built with Thesys](https://thesys.dev/built-with-thesys-badge.svg)](https://thesys.dev)
+## 🧠 Project Overview
+**Synapse AI** is a premium, high-performance AI ecosystem designed for enterprise-grade intelligence. The application features a sophisticated, emerald-themed interface that unifies chat, browsing, and strategic analysis into a single "Neural Link."
 
-## Getting Started
+## 🎨 Frontend Features (Completed)
 
-First, generate a new API key from [Thesys Console](https://chat.thesys.dev/console/keys) and then set it your environment variable.
+### 1. **Neural Interface (Landing Page)**
+- **Route:** `/`
+- **Tech:** Framer Motion, Tailwind CSS
+- **Features:**
+  - Dynamic Hero section with neural animations (`LightRays`).
+  - "Smart Solutions" grid showcasing enterprise capabilities.
+  - Interactive "Real World Strategies" and Testimonials modules.
+  - Fully responsive Navbar and Footer with cohesive branding.
 
-```bash
-export THESYS_API_KEY=<your-api-key>
-```
+### 2. **Synapse Chat Core**
+- **Route:** `/chat`
+- **Identity:** The central intelligence hub.
+- **Key Features:**
+  - **Dynamic Sidebar:** Collapsible, overlay-based navigation that preserves layout fluidly.
+  - **Prompt Quota System:** Limits free users to **50 prompts/day** with real-time tracking.
+  - **Smart Formatting:** Renders Markdown, lists, and code blocks beautifully.
+  - **Auto-Upgrade Logic:** Triggers a "Quota Exhausted" modal at zero prompts, guiding users to Premium.
 
-Install dependencies:
+### 3. **Synapse Neural Browser**
+- **Route:** `/browser`
+- **Concept:** A simulated, privacy-first web browser within the app.
+- **Key Features:**
+  - **Tabbed Browsing:** Create, close, and switch between virtual tabs.
+  - **Search Simulation:** Address bar simulating URL navigation and search queries.
+  - **Data Persistence:** Mock implementations of **History** and **Bookmarks** (stored in `localStorage`).
+  - **"Thesys" to "Synapse" Rebrand:** Fully updated branding logic across the interface.
 
-```bash
-npm i
-```
+### 4. **Premium Access Hub**
+- **Route:** `/premium`
+- **Design:** High-end pricing page with glassmorphism effects.
+- **Tiers:**
+  - **Free Tier:** Basic access (50 prompts).
+  - **Pro Neural:** Advanced reasoning & priority queues.
+  - **Titan AI:** Unlimited autonomous agents & API access.
 
-Then, run the development server:
+### 5. **Additional Pages**
+- **Services (`/services`):** Detailed breakdown of AI ecosystem offerings.
+- **About (`/about`):** Corporate mission, "Collective" team section, and values.
+- **Authentication (`/sign-in`):** Styled login interfaces.
 
-```bash
-npm run dev
-```
+### 6. **Micro-Interactions & Visual System**
+A key differentiator of Synapse AI is the unparalleled attention to detail:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+*   **Custom Color Ecosystem:** A bespoke **Emerald Green (`#00ff66`)** palette defines the brand, acting as the "energy source" against a deep void black background.
+*   **Glassmorphism Engine:** Custom CSS utilities (`.glass`, `.glass-card`) create a frosted, multi-layered UI depth that feels tangible.
+*   **"Matrix" Text Decoding:** A custom `TextDecode` component scrambles and reveals headers character-by-character for a cybernetic effect.
+*   **Physics-Based Motion:** Frame Motion integration provides spring-physics animations (e.g., the chat sidebar), giving UI elements real weight and momentum.
+*   **Infinite Immersion:** Custom scrollbar hiding techniques (`.scrollbar-hide`) ensure the interface looks like a native app, not a website.
+*   **Optimistic Neural Navigation:** The browser interface simulates instant page loads by updating the UI state *before* background processes finish, creating a zero-latency feel.
 
-You can start editing your responses by modifying the system prompt in `src/app/api/chat/route.ts`.
+---
 
-## Learn More
+## 🛠️ Technology Stack
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS + Custom Emerald Theme
+- **Animations:** Framer Motion (Complex layout transitions, springs, presence)
+- **Icons:** Lucide React
 
-To learn more about Thesys C1, take a look at the [C1 Documentation](https://docs.thesys.dev) - learn about Thesys C1.
+---
 
-## One-Click Deploy with Vercel
+## 🚀 Moving to Backend (Python)
+The frontend interface is fully polished. The next phase focuses on building a robust **Python Backend** to power the intelligence:
 
-[![Deploy with Vercel](https://vercel.com/button)](<https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fthesysdev%2Ftemplate-c1-next&env=THESYS_API_KEY&envDescription=Thesys%20Generative%20UI%20API%20key%20can%20be%20found%20in%20the%20Thesys%20console&envLink=https%3A%2F%2Fchat.thesys.dev%2Fconsole%2Fkeys&demo-title=C1%20Generative%20UI%20API&demo-description=C1%20Generative%20UI%20API%20by%20Thesys%20is%20designed%20to%20create%20dynamic%20and%20intelligent%20user%20interfaces.%20It%20leverages%20large%20language%20models%20(LLMs)%20to%20generate%20UI%20components%20in%20real-time%2C%20adapting%20to%20user%20input%20and%20context.%20Developers%20can%20integrate%20C1%20into%20their%20applications%20to%20enhance%20user%20engagement%20with%20visually%20rich%20and%20responsive%20interfaces.&demo-url=https%3A%2F%2Fchat.thesys.dev&demo-image=https%3A%2F%2Fgithub.com%2FCharlesCreativeContent%2FmyImages%2Fblob%2Fmain%2Fimages%2FC1Hero.png%3Fraw%3Dtrue>)
+- [ ] **API Framework:** Setting up **FastAPI** or **Django** for high-performance AI services.
+- [ ] **AI Orchestration:** Integrating advanced LLM chains (LangChain/LlamaIndex) for the "Neural" reasoning.
+- [ ] **Data Layer:** transitioning from local storage to PostgreSQL/Vector Databases (Pinecone/Weaviate).
+- [ ] **Authentication:** JWT-based secure handshakes between the Next.js frontend and Python backend.

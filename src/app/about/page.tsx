@@ -22,7 +22,7 @@ export default function AboutPage() {
                     className="text-center mb-24"
                 >
                     <h1 className="text-5xl md:text-7xl font-black mb-8 uppercase tracking-tighter">
-                        About <span className="text-primary italic">OMNI</span>
+                        About <span className="text-primary tracking-[0.2em] font-black uppercase text-[14px]">SYNAPSE AI</span>
                     </h1>
                     <p className="text-xl text-gray-400 max-w-3xl mx-auto leading-relaxed font-bold">
                         We are a collective of neural architects and cybersecurity experts dedicated to building the bridge between human intuition and machine intelligence.

@@ -21,16 +21,13 @@ export default function TermsPage() {
                 <div className="space-y-8 text-gray-400 leading-relaxed font-medium">
                     <section>
                         <h2 className="text-white text-xl font-bold mb-4 uppercase">1. Ethical Use</h2>
-                        <p>By accessing OMNI, you agree to use our artificial intelligence systems only for ethical purposes. Misuse for malicious cyber activities is strictly prohibited.</p>
+                        <p>By accessing SYNAPSE AI, you agree to use our artificial intelligence systems only for ethical purposes. Misuse for malicious cyber activities is strictly prohibited.</p>
+                        <p>Our autonomous agents are governed by strict protocols. Attempting to override safety filters or prompt-inject for unauthorized outcomes may result in termination of service.</p>
+                        <p>SYNAPSE AI provides high-probability insights but is not liable for autonomous decisions made by the user based on these insights.</p>
                     </section>
 
                     <section>
-                        <h2 className="text-white text-xl font-bold mb-4 uppercase">2. Neural Liability</h2>
-                        <p>OMNI AI provides high-probability insights but is not liable for autonomous decisions made by the user based on these insights.</p>
-                    </section>
-
-                    <section>
-                        <h2 className="text-white text-xl font-bold mb-4 uppercase">3. Service Evolution</h2>
+                        <h2 className="text-white text-xl font-bold mb-4 uppercase">2. Service Evolution</h2>
                         <p>Our systems evolve in real-time. We reserve the right to update intelligence protocols to ensure safety and performance standards.</p>
                     </section>
                 </div>

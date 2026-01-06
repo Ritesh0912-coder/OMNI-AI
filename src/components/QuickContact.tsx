@@ -19,7 +19,7 @@ const contactInfo = [
     {
         icon: <Mail className="w-6 h-6 text-primary" />,
         title: "Email Us",
-        value: "hello@omni-ai.com",
+        value: "hello@synapse-ai.com",
         desc: "We'll respond within 24 hours"
     }
 ];

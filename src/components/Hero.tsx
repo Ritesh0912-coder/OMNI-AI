@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Play } from "lucide-react";
 import TextDecode from "@/components/ui/TextDecode";
@@ -8,8 +9,22 @@ import Orb from "./ui/Orb";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 
+const businessHeadlines = [
+    "Dominance Through Neural Intelligence",
+    "Scale Your Empire With Apex Logic",
+    "Architecting the Future of Global Trade",
+    "Unleashing Superior Strategic Vision",
+    "Precision Engineering for Every System"
+];
+
 export default function Hero() {
     const { status } = useSession();
+    const [headline, setHeadline] = useState(businessHeadlines[0]);
+
+    useEffect(() => {
+        const randomHeadline = businessHeadlines[Math.floor(Math.random() * businessHeadlines.length)];
+        setHeadline(randomHeadline);
+    }, []);
 
     return (
         <section className="relative h-screen min-h-[700px] w-full overflow-hidden flex items-center justify-center">
@@ -51,10 +66,29 @@ export default function Hero() {
                     </div>
 
                     <h1 className="text-5xl lg:text-7xl font-black tracking-tight text-white leading-[1] uppercase">
-                        <TextDecode text="AI Beyond Your" /> <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-white to-primary relative pb-2 block mt-2">
-                            <TextDecode text="Business Limits" delay={1} />
-                        </span>
+                        {headline === "Dominance Through Neural Intelligence" ? (
+                            <>
+                                <span className="text-primary"><TextDecode text="Dominance" /></span> <TextDecode text="Through Neural Intelligence" />
+                            </>
+                        ) : headline === "Scale Your Empire With Apex Logic" ? (
+                            <>
+                                Scale Your <span className="text-primary"><TextDecode text="Empire" /></span> <TextDecode text="With Apex Logic" />
+                            </>
+                        ) : headline === "Architecting the Future of Global Trade" ? (
+                            <>
+                                Architecting the <span className="text-primary"><TextDecode text="Future" /></span> <TextDecode text="of Global Trade" />
+                            </>
+                        ) : headline === "Unleashing Superior Strategic Vision" ? (
+                            <>
+                                Unleashing Superior <span className="text-primary"><TextDecode text="Strategic" /></span> <TextDecode text="Vision" />
+                            </>
+                        ) : headline === "Precision Engineering for Every System" ? (
+                            <>
+                                Precision <span className="text-primary"><TextDecode text="Engineering" /></span> <TextDecode text="for Every System" />
+                            </>
+                        ) : (
+                            <TextDecode text={headline} />
+                        )}
                     </h1>
 
                     <p className="text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed drop-shadow-lg font-medium">

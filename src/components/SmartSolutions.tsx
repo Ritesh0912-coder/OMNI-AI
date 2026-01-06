@@ -35,7 +35,7 @@ export default function SmartSolutions() {
                         <span className="text-gray-500">Designed for Impact.</span>
                     </h2>
                     <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-lg">
-                        We build AI solutions that solve real-world problems. From automating mundane tasks to providing deep strategic insights, OMNI is the intelligence layer your business needs to thrive.
+                        We build AI solutions that solve real-world problems. From automating mundane tasks to providing deep strategic insights, SYNAPSE AI is the intelligence layer your business needs to thrive.
                     </p>
 
                     <Link href="/about" className="text-white border-b border-primary hover:text-primary transition-colors pb-1">

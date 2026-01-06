@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "OMNI - AI Beyond Limits",
-  description: "Driven by Intelligence. Designed for Impact.",
+  title: "SYNAPSE AI | Apex Strategic Intelligence",
+  description: "Sophisticated AI authority for global business engineering and high-stakes strategy.",
 };
 
 import { AuthProvider } from "@/components/AuthProvider";

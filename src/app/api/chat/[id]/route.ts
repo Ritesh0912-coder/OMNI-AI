@@ -31,7 +31,7 @@ export async function GET(
             title: chat.title
         });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Fetch Chat Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
@@ -61,7 +61,7 @@ export async function DELETE(
 
         return NextResponse.json({ message: 'Chat deleted successfully' });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Delete Chat Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
@@ -97,7 +97,7 @@ export async function PATCH(
 
         return NextResponse.json({ message: 'Chat updated successfully', messages: chat.messages });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Update Chat Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

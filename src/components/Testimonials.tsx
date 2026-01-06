@@ -7,19 +7,19 @@ const testimonials = [
     {
         name: "Jonathan Vance",
         role: "CTO, Nexus Dynamics",
-        content: "The autonomous agents provided by OMNI have revolutionized our customer support operations. We've seen a 40% reduction in response times and unprecedented consistency in service quality.",
+        content: "The autonomous agents provided by SYNAPSE AI have revolutionized our customer support operations. We've seen a 40% reduction in response times and unprecedented consistency in service quality.",
         stars: 5,
     },
     {
-        name: "Elena Rodriguez",
-        role: "Product Strategy, Global Retail",
-        content: "Predictive analytics from OMNI allowed us to anticipate inventory needs three months ahead of peak season. The accuracy of their models is simply game-changing for our supply chain.",
+        name: "Marcus Chen",
+        role: "COO, Logistics Global",
+        content: "Predictive analytics from SYNAPSE AI allowed us to anticipate inventory needs three months ahead of peak season. The accuracy of their models is simply game-changing for our supply chain.",
         stars: 5,
     },
     {
-        name: "Marcus Thorne",
-        role: "Founder, Horizon FinTech",
-        content: "Implementing OMNI's NLP solutions was seamless. Our multi-lingual user base now interacts with our platform in their native languages with zero friction. Truly a world-class AI partner.",
+        name: "Amina Al-Fayed",
+        role: "Head of Infrastructure",
+        content: "Implementing SYNAPSE AI's NLP solutions was seamless. Our multi-lingual user base now interacts with our platform in their native languages with zero friction. Truly a world-class AI partner.",
         stars: 5,
     },
 ];

@@ -21,17 +21,17 @@ export default function PrivacyPage() {
                 <div className="space-y-8 text-gray-400 leading-relaxed font-medium">
                     <section>
                         <h2 className="text-white text-xl font-bold mb-4 uppercase">1. Data Encryption</h2>
-                        <p>All neural data transmitted through the OMNI interface is encrypted using quantum-resistant protocols. We do not store raw biological or cognitive patterns.</p>
+                        <p>All neural data transmitted through the SYNAPSE AI interface is encrypted using quantum-resistant protocols. We do not store raw biological or cognitive patterns.</p>
                     </section>
 
                     <section>
                         <h2 className="text-white text-xl font-bold mb-4 uppercase">2. Intelligence Privacy</h2>
-                        <p>Your interactions with the OMNI AI are private. We do not use individual session data to train global models without explicit, multi-factor authorization.</p>
+                        <p>Your interactions with the SYNAPSE AI are private. We do not use individual session data to train global models without explicit, multi-factor authorization.</p>
                     </section>
 
                     <section>
                         <h2 className="text-white text-xl font-bold mb-4 uppercase">3. Third-Party Access</h2>
-                        <p>OMNI does not sell or distribute your data to third-party entities. Integration with external systems is managed through secure, user-controlled API keys.</p>
+                        <p>SYNAPSE AI does not sell or distribute your data to third-party entities. Integration with external systems is managed through secure, user-controlled API keys.</p>
                     </section>
                 </div>
             </div>

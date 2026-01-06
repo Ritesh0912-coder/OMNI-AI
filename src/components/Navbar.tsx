@@ -12,7 +12,7 @@ const navLinks = [
     { name: "Home", href: "/" },
     { name: "About", href: "/#about" },
     { name: "Services", href: "/#services" },
-    { name: "Browser", href: "/#strategies" },
+    { name: "Browser", href: "/browser" },
 ];
 
 export default function Navbar() {
@@ -36,17 +36,10 @@ export default function Navbar() {
             )}>
                 {/* Logo */}
                 <Link href="/" className="flex items-center gap-3 group">
-                    <div className="relative w-8 h-8 transition-transform group-hover:scale-110">
-                        <Image
-                            src="/logo.png"
-                            alt="OMNI Logo"
-                            fill
-                            className="object-contain"
-                        />
+                    <div className="relative w-10 h-10 transition-transform group-hover:scale-110">
+                        <Image src="/synapse-logo.png" alt="SYNAPSE AI" fill className="object-contain" />
                     </div>
-                    <span className="text-xl font-black tracking-tighter text-white uppercase sm:block hidden">
-                        OMNI
-                    </span>
+                    <span className="text-[12px] font-black tracking-[0.5em] uppercase text-white/90">SYNAPSE AI</span>
                 </Link>
 
                 {/* Desktop Links */}

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import connectToDatabase from '@/lib/mongodb';
 import Chat from '@/models/Chat';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
         const session = await getServerSession();
         if (!session || !session.user?.email) {
@@ -18,8 +18,8 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json({ chats });
 
-    } catch (error: any) {
+    } catch (error) {
         console.error('Fetch Chats Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: (error as Error).message || 'Internal Server Error' }, { status: 500 });
     }
 }

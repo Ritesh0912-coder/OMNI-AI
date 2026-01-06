@@ -17,7 +17,7 @@ const handler = NextAuth({
             async authorize(credentials) {
                 // Mock and always allow for now, but in real use, find the user in DB
                 if (credentials?.email && credentials?.password) {
-                    return { id: "1", name: "OMNI User", email: credentials.email };
+                    return { id: "1", name: "SYNAPSE AI User", email: credentials.email };
                 }
                 return null;
             }
@@ -27,7 +27,7 @@ const handler = NextAuth({
         signIn: "/sign-in",
     },
     callbacks: {
-        async session({ session, token }) {
+        async session({ session }) {
             return session;
         },
     },

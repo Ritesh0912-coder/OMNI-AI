@@ -15,12 +15,12 @@ export default function Footer() {
                     <div className="col-span-1 md:col-span-2">
                         <Link href="/" className="flex items-center gap-3 mb-8 group">
                             <div className="relative w-10 h-10 transition-transform group-hover:scale-110">
-                                <Image src="/logo.png" alt="OMNI Logo" fill className="object-contain" />
+                                <Image src="/synapse-logo.png" alt="SYNAPSE AI" fill className="object-contain" />
                             </div>
-                            <span className="text-3xl font-black text-white tracking-tighter uppercase">OMNI</span>
+                            <span className="text-[12px] font-black tracking-[0.5em] uppercase mb-6 inline-block text-white/90">SYNAPSE AI</span>
                         </Link>
-                        <p className="text-gray-400 max-w-sm mb-10 leading-relaxed text-lg">
-                            Pioneering the future of artificial intelligence. We create systems that not only think but understand the human context.
+                        <p className="text-gray-500 text-sm leading-relaxed max-w-sm">
+                            World-class AI strategic intelligence for global business engineering and high-stakes corporate strategy.
                         </p>
                         <div className="flex gap-6">
                             {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
@@ -64,7 +64,7 @@ export default function Footer() {
                 </div>
 
                 <div className="border-t border-white/5 pt-12 flex flex-col md:flex-row justify-between items-center gap-8 text-sm text-gray-500 font-bold uppercase tracking-widest">
-                    <p>&copy; 2024 OMNI AI Intelligence. All rights reserved.</p>
+                    <p>&copy; 2024 SYNAPSE AI Intelligence. All rights reserved.</p>
                     <div className="flex gap-12">
                         <Link href="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
                         <Link href="/terms" className="hover:text-primary transition-colors">Terms</Link>
