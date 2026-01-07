@@ -1,0 +1,16 @@
+{
+    "name": "thesys-ai-browser-desktop",
+    "version": "1.0.0",
+    "description": "Desktop version of Thesys AI Browser",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "dev": "cross-env NODE_ENV=development electron .",
+        "build": "electron-builder"
+    },
+    "devDependencies": {
+        "cross-env": "^7.0.3",
+        "electron": "^31.0.0",
+        "electron-builder": "^24.13.3"
+    }
+}
