@@ -941,15 +941,27 @@ export default function ChatPage() {
                                         <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Initiate team transmission to begin collective analysis.</p>
                                     </div>
                                 )}
-                                {messages.filter(msg => msg.role !== 'tool').map((msg, i) => (
+                                {messages.filter(msg => {
+                                    // Hide tool result messages UNLESS they are charts (which we render)
+                                    if (msg.role === 'tool' && (msg as any).name !== 'show_stock_chart') return false;
+
+                                    // Hide AI assistant messages that only have tool calls (the "intent" message) 
+                                    // if it lacks content/image, as it results in an empty bubble.
+                                    if (msg.role === 'ai' && !msg.content.trim() && !msg.image && (msg as any).tool_calls) return false;
+
+                                    // Also hide generic empty AI messages
+                                    if (msg.role === 'ai' && !msg.content.trim() && !msg.image && !(msg as any).tool_calls) return false;
+
+                                    return true;
+                                }).map((msg, i, filteredArray) => (
                                     <motion.div
                                         key={i}
-                                        initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20 }}
+                                        initial={{ opacity: 0, x: msg.role === 'user' ? 20 : (msg.role === 'ai' || msg.role === 'tool' ? -20 : 0) }}
                                         animate={{ opacity: 1, x: 0 }}
                                         className={`flex gap-4 w-full ${msg.role === 'user' ? 'flex-row-reverse justify-start' : 'justify-start'}`}
                                     >
-                                        <div className={`w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center border transition-all overflow-hidden ${msg.role === 'ai' ? 'bg-[#0a0a0a] border-primary/30' : 'bg-[#0a0a0a] border-white/10'}`}>
-                                            {msg.role === 'ai' ? (
+                                        <div className={`w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center border transition-all overflow-hidden ${(msg.role === 'ai' || msg.role === 'tool') ? 'bg-[#0a0a0a] border-primary/30' : 'bg-[#0a0a0a] border-white/10'}`}>
+                                            {(msg.role === 'ai' || msg.role === 'tool') ? (
                                                 <img src="/ai-avatar.png" alt="AI" className="w-full h-full object-cover" />
                                             ) : (
                                                 (() => {
@@ -979,31 +991,51 @@ export default function ChatPage() {
                                         </div>
                                         <div className={`p-5 rounded-3xl border leading-[1.8] text-[14px] md:text-[15px] max-w-[92%] relative group/msg shadow-2xl ${msg.role === 'ai' ? 'bg-white/[0.03] border-white/10 text-gray-300 rounded-tl-none' : 'bg-primary/10 border-primary/20 text-white rounded-tr-none'}`}>
                                             {/* Sender Name Branding */}
-                                            {(activeGroup || msg.senderName) && (
-                                                <div className={`absolute -top-6 ${msg.role === 'user' ? 'right-0' : 'left-0'} text-[10px] font-black uppercase tracking-[0.2em] ${msg.role === 'ai' ? 'text-primary/60' : 'text-gray-500'} whitespace-nowrap px-1`}>
-                                                    {msg.role === 'ai' ? 'SYNAPSE AI' : (msg.senderName || 'Anonymous Participant')}
+                                            {(activeGroup || msg.senderName || msg.role === 'tool') && (
+                                                <div className={`absolute -top-6 ${msg.role === 'user' ? 'right-0' : 'left-0'} text-[10px] font-black uppercase tracking-[0.2em] ${(msg.role === 'ai' || msg.role === 'tool') ? 'text-primary/60' : 'text-gray-500'} whitespace-nowrap px-1`}>
+                                                    {(msg.role === 'ai' || msg.role === 'tool') ? 'SYNAPSE AI' : (msg.senderName || 'Anonymous Participant')}
                                                 </div>
                                             )}
-                                            {msg.image && (
-                                                <div className="mb-4 relative group/neural-asset">
-                                                    <div className="absolute -inset-1 bg-primary/20 rounded-2xl blur-lg opacity-0 group-hover/neural-asset:opacity-100 transition-opacity duration-700" />
-                                                    <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm group/frame">
-                                                        <img src={msg.image} alt="Neural Visual Asset" className="w-full h-full object-cover grayscale-[0.3] group-hover/frame:grayscale-0 transition-all duration-700 scale-[1.02] group-hover/frame:scale-100" />
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
-                                                        {/* Scanning Line Effect - Only active during processing of latest user message */}
-                                                        {isLoading && i === messages.length - 1 && (
-                                                            <>
-                                                                <div className="absolute top-0 left-0 right-0 h-[1px] bg-primary/40 shadow-[0_0_10px_#00ff66] animate-[scan_3s_linear_infinite]" />
-                                                                <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                                                                    <span className="text-[7px] font-black text-white/50 uppercase tracking-[0.2em]">Neural Signal Lock</span>
-                                                                </div>
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                            {msg.role === 'tool' && (msg as any).name === 'show_stock_chart' ? (() => {
+                                                try {
+                                                    const chartData = JSON.parse(msg.content);
+                                                    return <TradingViewChart symbol={chartData.symbol} interval={chartData.interval} />;
+                                                } catch (e) {
+                                                    return <div className="text-red-500 text-[10px] font-mono">Chart Transmission Corrupted</div>;
+                                                }
+                                            })() : (
+                                                <>
+                                                    {msg.image && (
+                                                        <div className="mb-4 relative group/neural-asset">
+                                                            <div className="absolute -inset-1 bg-primary/20 rounded-2xl blur-lg opacity-0 group-hover/neural-asset:opacity-100 transition-opacity duration-700" />
+                                                            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm group/frame">
+                                                                <img src={msg.image} alt="Neural Visual Asset" className="w-full h-full object-cover grayscale-[0.3] group-hover/frame:grayscale-0 transition-all duration-700 scale-[1.02] group-hover/frame:scale-100" />
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
+                                                                {/* Scanning Line Effect - Only active during processing of latest user message */}
+                                                                {isLoading && i === filteredArray.length - 1 && (
+                                                                    <>
+                                                                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-primary/40 shadow-[0_0_10px_#00ff66] animate-[scan_3s_linear_infinite]" />
+                                                                        <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+                                                                            <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                                                            <span className="text-[7px] font-black text-white/50 uppercase tracking-[0.2em]">Neural Signal Lock</span>
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {((msg as any).tool_calls && (msg as any).tool_calls[0]?.function?.name === 'show_stock_chart') ? (() => {
+                                                        try {
+                                                            const args = JSON.parse((msg as any).tool_calls[0].function.arguments);
+                                                            return <TradingViewChart symbol={args.symbol} interval={args.interval} />;
+                                                        } catch (e) {
+                                                            return <div className="text-red-500 text-[10px] font-mono">Chart Transmission Corrupted</div>;
+                                                        }
+                                                    })() : (
+                                                        <FormattedMessage content={msg.content} />
+                                                    )}
+                                                </>
                                             )}
-                                            <FormattedMessage content={msg.content} />
 
                                             {/* Action Buttons */}
                                             <div className={`absolute -bottom-6 flex gap-2 transition-opacity duration-300 opacity-0 group-hover/msg:opacity-100 ${msg.role === 'user' ? 'left-0' : 'right-0'}`}>
@@ -1546,20 +1578,124 @@ export default function ChatPage() {
     );
 }
 
+// TradingView Real-time Chart Component
+function TradingViewChart({ symbol, interval }: { symbol: string, interval?: string }) {
+    let formattedSymbol = symbol.toUpperCase();
+    if (!formattedSymbol.includes(':')) {
+        if (['NIFTY', 'SENSEX', 'BANKNIFTY'].includes(formattedSymbol)) {
+            formattedSymbol = `NSE:${formattedSymbol}`;
+        } else if (['BTC', 'ETH', 'SOL'].includes(formattedSymbol)) {
+            formattedSymbol = `BINANCE:${formattedSymbol}USDT`;
+        } else {
+            formattedSymbol = `NASDAQ:${formattedSymbol}`;
+        }
+    }
+    return (
+        <div className="w-full h-[450px] my-6 rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] bg-[#0c0c0c] relative group/chart">
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+            <iframe
+                src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_762c4&symbol=${formattedSymbol}&interval=${interval || 'D'}&hidesidetoolbar=1&hidetoptoolbar=1&symboledit=1&saveimage=1&toolbarbg=f1f3f6&studies=%5B%5D&theme=dark&style=1&timezone=Etc%2FUTC&studies_overrides=%7B%7D&overrides=%7B%7D&enabled_features=%5B%5D&disabled_features=%5B%5D&locale=en&utm_source=localhost&utm_medium=widget&utm_campaign=chart&utm_term=${formattedSymbol}`}
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                allowTransparency={true}
+                scrolling="no"
+                allowFullScreen={true}
+                className="relative z-10"
+            ></iframe>
+            <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_#00ff66]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 drop-shadow-md">Live Transmission: {formattedSymbol}</span>
+            </div>
+        </div>
+    );
+}
+
+// Signal Graph Component for Visual Intelligence
+function SignalGraph({ data }: { data: any[] }) {
+    return (
+        <div className="my-6 p-6 bg-black/40 border border-primary/20 rounded-3xl backdrop-blur-xl relative overflow-hidden group/graph">
+            <div className="absolute top-0 right-0 p-3 opacity-20 group-hover/graph:opacity-50 transition-opacity">
+                <Shield className="w-12 h-12 text-primary" />
+            </div>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-6 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                Neural Intelligence Signal
+            </h4>
+            <div className="space-y-4 relative z-10">
+                {data.map((item, idx) => (
+                    <div key={idx} className="space-y-2">
+                        <div className="flex justify-between items-end">
+                            <span className="text-[11px] font-bold text-gray-300 uppercase tracking-tight">{item.signal}</span>
+                            <span className={`text-[9px] font-black uppercase tracking-widest ${item.level === 3 ? 'text-red-500' : item.level === 2 ? 'text-yellow-500' : 'text-primary'}`}>
+                                {item.level === 3 ? 'Critical' : item.level === 2 ? 'Active' : 'Stable'}
+                            </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden flex">
+                            {[1, 2, 3].map((step) => (
+                                <motion.div
+                                    key={step}
+                                    initial={{ scaleX: 0 }}
+                                    animate={{ scaleX: item.level >= step ? 1 : 0 }}
+                                    className={`h-full flex-1 border-r border-black/20 ${step === 3 ? 'bg-red-500' : step === 2 ? 'bg-yellow-500' : 'bg-primary'
+                                        } ${item.level >= step ? 'opacity-100' : 'opacity-0'}`}
+                                    style={{ transformOrigin: 'left' }}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
+                <span className="text-[8px] font-bold text-gray-600 uppercase tracking-widest">Decision Source: Synapse Core</span>
+                <div className="flex gap-1">
+                    <div className="w-1 h-1 rounded-full bg-primary/40" />
+                    <div className="w-1 h-1 rounded-full bg-primary/20" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // High-fidelity Markdown-style and link formatter for Strategic Intelligence
 function FormattedMessage({ content }: { content: string }) {
+    // Detect and extract signal blocks
+    const signalRegex = /\[\s*{\s*"signal":\s*".*?"\s*,\s*"level":\s*\d\s*}\s*(?:,\s*{\s*"signal":\s*".*?"\s*,\s*"level":\s*\d\s*}\s*)*\]/g;
+    const signals: any[][] = [];
+    let cleanContent = content;
+
+    const matches = content.match(signalRegex);
+    if (matches) {
+        matches.forEach(match => {
+            try {
+                const data = JSON.parse(match);
+                signals.push(data);
+                cleanContent = cleanContent.replace(match, `__SIGNAL_BLOCK_${signals.length - 1}__`);
+            } catch (e) {
+                console.error("Failed to parse signal block:", e);
+            }
+        });
+    }
+
     // Up-leveled formatting for Strategic Intelligence Reports
-    const formatted = content
+    const formatted = cleanContent
         .replace(/### (.*?)(?:\n|$)/g, '<h3 class="text-primary font-black uppercase tracking-[0.2em] text-[11px] mt-8 mb-3 flex items-center gap-2 border-l-2 border-primary/40 pl-3 bg-primary/5 py-1.5 rounded-r-md">$1</h3>')
         .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white font-black">$1</strong>')
         .replace(/^\d\.\s/gm, '<br/><strong class="text-primary font-black">$&</strong>')
         .replace(/^[\-\*]\s/gm, '<br/><span class="text-primary/60">•</span> ')
         .replace(/(🎯|⚡|⚠️|✔|🎯|✅|🚀|🏛️|🔒)/g, '<span class="inline-block animate-pulse text-lg mr-1">$1</span>');
 
+    const sections = formatted.split(/__SIGNAL_BLOCK_(\d+)__/);
+
     return (
-        <div
-            className="whitespace-pre-wrap break-words leading-[1.8] text-gray-300 selection:bg-primary selection:text-black"
-            dangerouslySetInnerHTML={{ __html: formatted }}
-        />
+        <div className="whitespace-pre-wrap break-words leading-[1.8] text-gray-300 selection:bg-primary selection:text-black">
+            {sections.map((part, i) => {
+                if (i % 2 === 1) {
+                    const signalIdx = parseInt(part);
+                    return <SignalGraph key={i} data={signals[signalIdx]} />;
+                }
+                return <span key={i} dangerouslySetInnerHTML={{ __html: part }} />;
+            })}
+        </div>
     );
 }

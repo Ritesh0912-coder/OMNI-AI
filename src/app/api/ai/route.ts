@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
     try {
-        const { query } = await req.json();
+        const { query, context } = await req.json();
         const apiKey = process.env.OPENROUTER_API_KEY;
 
         if (!apiKey) {
@@ -16,6 +16,24 @@ export async function POST(req: Request) {
             "meta-llama/llama-3-8b-instruct:free",
             "microsoft/phi-3-mini-128k-instruct:free"
         ];
+
+        const systemPrompt = `You are SYNAPSE AI, a high-performance Real-Time Decision Intelligence Engine.
+Your task is to provide a sharp, highly analytical summary of the user's query.
+
+${context ? `CORE DATA NODES (REAL-TIME SEARCH CONTEXT):
+${context}
+
+Instructions:
+1. Synthesize the provided search results into a cohesive intelligence report.
+2. Focus on facts, trends, and practical implications.
+3. Maintain a professional, executive tone.
+4. If the results are irrelevant or contradictory, highlight the uncertainty.` : "Provide a concise, analytical summary based on your internal knowledge base."}
+
+FORMATTING:
+- NO headers.
+- MAX 2-3 paragraphs.
+- Bold key terms or metrics.
+- Address the user's intent with precision.`;
 
         for (const model of models) {
             try {
@@ -31,9 +49,11 @@ export async function POST(req: Request) {
                     body: JSON.stringify({
                         "model": model,
                         "messages": [
-                            { "role": "system", "content": "You are Synapse, a helpful AI browser assistant. Provide a concise, 2-paragraph summary of the user's search query, based on general knowledge." },
+                            { "role": "system", "content": systemPrompt },
                             { "role": "user", "content": query }
-                        ]
+                        ],
+                        "max_tokens": 1024,
+                        "temperature": 0.5
                     })
                 });
 

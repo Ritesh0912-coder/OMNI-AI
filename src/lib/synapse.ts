@@ -80,55 +80,56 @@ class SynapseAIService {
         const apiKey = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_API_KEY;
         const cx = process.env.NEXT_PUBLIC_GOOGLE_SEARCH_CX || "52cdfdc28b314462a";
 
-        // Start Internal AI Request immediately (Parallel)
-        const aiRequestPromise = (async () => {
+        // 1. Start Google Search Request
+        let googleData: any = null;
+        if (apiKey && cx) {
             try {
-                console.log("Calling internal AI route (Parallel)...");
-                const aiRes = await fetch("/api/ai", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ query })
-                });
-                if (aiRes.ok) {
-                    const aiData = await aiRes.json();
-                    return aiData.content;
-                } else {
-                    const errText = await aiRes.text();
-                    console.error(`Internal AI Route failed: ${aiRes.status}`, errText);
-                    return null;
-                }
-            } catch (e) {
-                console.error("Internal AI Error:", e);
-                return null;
+                const response = await fetch(
+                    `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}`
+                );
+                googleData = await response.json();
+            } catch (error) {
+                console.error("Google Search API Error:", error);
             }
-        })();
+        }
 
-        // Start Google Search Request (Parallel)
-        const googleSearchPromise = (async () => {
-            if (apiKey && cx) {
-                try {
-                    const response = await fetch(
-                        `https://www.googleapis.com/customsearch/v1?key=${apiKey}&cx=${cx}&q=${encodeURIComponent(query)}`
-                    );
-                    const data = await response.json();
-                    return data;
-                } catch (error) {
-                    console.error("Google Search API Error:", error);
-                    return null;
-                }
+        // 2. Prepare Context for AI
+        let searchContext = "";
+        if (googleData && googleData.items) {
+            searchContext = googleData.items
+                .slice(0, 5)
+                .map((item: any) => `Source: ${item.displayLink}\nTitle: ${item.title}\nSnippet: ${item.snippet}`)
+                .join("\n\n");
+        }
+
+        // 3. Start AI Request with Context
+        let aiResult: string | null = null;
+        try {
+            console.log("Calling internal AI route with context...");
+            const aiRes = await fetch("/api/ai", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query, context: searchContext })
+            });
+
+            if (aiRes.ok) {
+                const aiData = await aiRes.json();
+                aiResult = aiData.content;
+            } else {
+                const errText = await aiRes.text();
+                console.error(`Internal AI Route failed: ${aiRes.status}`, errText);
             }
-            return null;
-        })();
+        } catch (e) {
+            console.error("Internal AI Error:", e);
+        }
 
-        // Await both results
-        const [aiResult, googleData] = await Promise.all([aiRequestPromise, googleSearchPromise]);
-
+        // 4. Transform Results
         if (googleData && googleData.items) {
             let aiSummary = aiResult
                 ? aiResult
                 : `Neural Analysis Complete. Decrypting ${googleData.searchInformation?.totalResults || 'multiple'} web nodes related to "${query}". Data stream suggests high relevance in the current technical landscape.`;
 
-            if (aiResult) console.log("Internal AI Success:", aiResult.substring(0, 50));
+            if (aiResult) console.log("Internal AI Success (Context-Aware)");
 
             return {
                 query,

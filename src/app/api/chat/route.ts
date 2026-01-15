@@ -265,6 +265,29 @@ CRITICAL: You are now in GROUP INTELLIGENCE MODE. Focus on team decisions, share
             content: searchResult,
             timestamp: new Date()
           });
+        } else if (toolCall.function.name === 'show_stock_chart') {
+          const args = JSON.parse(toolCall.function.arguments);
+          const chartResult = JSON.stringify({
+            type: "chart",
+            source: "tradingview",
+            symbol: args.symbol,
+            interval: args.interval || "D",
+            success: true
+          });
+
+          openAIMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: `Chart for ${args.symbol} generated. Rendering on user interface...`,
+          });
+
+          currentChat.messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            name: 'show_stock_chart',
+            content: chartResult,
+            timestamp: new Date()
+          });
         }
       }
 
@@ -272,6 +295,8 @@ CRITICAL: You are now in GROUP INTELLIGENCE MODE. Focus on team decisions, share
       const secondResponse = await openai.chat.completions.create({
         model: model,
         messages: openAIMessages,
+        max_tokens: 4096,
+        temperature: 0.7,
       });
 
       aiResponse = secondResponse.choices?.[0]?.message?.content || "Analysis complete.";
