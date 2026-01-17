@@ -25,21 +25,30 @@ const solutions = [
 export default function SmartSolutions() {
     return (
         <section id="about" className="py-24 relative overflow-hidden">
-            <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+            {/* Background Decorations */}
+            <div className="absolute inset-0 z-0 decorated-grid opacity-10" />
+            <div className="absolute right-0 top-1/4 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[140px] -z-10 animate-pulse" />
 
+            <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center relative z-10">
                 {/* Left: Text Content */}
-                <ScrollReveal className="space-y-6">
-                    <div className="text-primary text-sm font-semibold tracking-widest uppercase mb-4">About Us</div>
-                    <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6 leading-tight">
-                        Driven by Intelligence. <br />
-                        <span className="text-gray-500">Designed for Impact.</span>
+                <ScrollReveal className="space-y-8">
+                    <div className="relative inline-block">
+                        <div className="text-primary text-sm font-bold tracking-[0.4em] uppercase mb-4">Why SYNAPSE AI</div>
+                        <div className="absolute -bottom-1 left-0 w-12 h-0.5 bg-primary/50" />
+                    </div>
+
+                    <h2 className="text-3xl lg:text-5xl font-black text-white mb-6 leading-tight uppercase tracking-tight">
+                        Business <span className="text-primary">Intelligence</span>. <br />
+                        <span className="text-white/40">Strategic Advantage.</span>
                     </h2>
-                    <p className="text-sm text-gray-400 mb-8 leading-relaxed max-w-lg">
-                        We build AI solutions that solve real-world problems. From automating mundane tasks to providing deep strategic insights, SYNAPSE AI is the intelligence layer your business needs to thrive.
+
+                    <p className="text-sm md:text-base text-gray-400 mb-8 leading-relaxed max-w-lg tracking-wide">
+                        We deliver AI-powered business intelligence that transforms raw data into strategic decisions. From automating complex operational workflows to providing predictive market insights, SYNAPSE AI is the competitive edge your enterprise needs to achieve market leadership.
                     </p>
 
-                    <Link href="/about" className="text-white border-b border-primary hover:text-primary transition-colors pb-1">
-                        Read Our Story
+                    <Link href="/about" className="group inline-flex items-center gap-3 text-white border-b border-white/10 hover:border-primary transition-all pb-2 text-xs font-black uppercase tracking-[0.2em]">
+                        Explore Our Vision
+                        <div className="w-8 h-px bg-white/20 group-hover:bg-primary group-hover:w-12 transition-all" />
                     </Link>
                 </ScrollReveal>
 
@@ -49,23 +58,29 @@ export default function SmartSolutions() {
                         <ScrollReveal
                             key={index}
                             delay={index * 0.1}
-                            className="glass-card p-6 rounded-2xl flex items-start gap-5 hover:bg-white/5 transition-all duration-300 group"
+                            className="glass-card p-8 rounded-2xl flex items-start gap-6 border-white/5 hover:border-primary/40 transition-all duration-500 group relative overflow-hidden"
                         >
-                            <div className="p-3 rounded-xl bg-white/5 border border-white/10 group-hover:border-primary/50 transition-colors">
+                            {/* Animated Background Line */}
+                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/0 group-hover:bg-primary/50 transition-all duration-500" />
+
+                            <div className="p-4 rounded-xl bg-white/5 border border-white/10 group-hover:border-primary/50 transition-colors relative">
                                 {item.icon}
+                                {/* Pulse Indicator for Card */}
+                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(0,255,102,0.6)]" />
                             </div>
-                            <div>
-                                <h3 className="text-xl font-semibold text-white mb-2">{item.title}</h3>
-                                <p className="text-sm text-gray-400">{item.desc}</p>
+
+                            <div className="space-y-2">
+                                <h3 className="text-xl font-black text-white uppercase tracking-tight group-hover:text-primary transition-colors">{item.title}</h3>
+                                <p className="text-sm text-gray-400 leading-relaxed font-medium">{item.desc}</p>
+                                <div className="pt-2 flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-primary/30" />
+                                    <span className="text-[10px] text-primary/50 font-bold uppercase tracking-widest">Active System</span>
+                                </div>
                             </div>
                         </ScrollReveal>
                     ))}
                 </div>
-
             </div>
-
-            {/* Decorative Blob */}
-            <div className="absolute right-0 top-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[128px] -z-10" />
         </section>
     );
 }

@@ -3,6 +3,8 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { AuthOptions } from "next-auth";
 import connectToDatabase from "./mongodb";
 import User from "@/models/User";
+import bcrypt from "bcryptjs";
+import { sendLoginNotification } from "./email";
 
 export const authOptions: AuthOptions = {
     providers: [
@@ -17,11 +19,22 @@ export const authOptions: AuthOptions = {
                 password: { label: "Password", type: "password" }
             },
             async authorize(credentials) {
-                // Mock and always allow for now, but in real use, find the user in DB
-                if (credentials?.email && credentials?.password) {
-                    return { id: "1", name: "SYNAPSE AI User", email: credentials.email };
+                if (!credentials?.email || !credentials?.password) return null;
+
+                await connectToDatabase();
+                const user = await User.findOne({ email: credentials.email }).select('+password');
+
+                if (!user || !user.password) {
+                    throw new Error("Invalid credentials");
                 }
-                return null;
+
+                const isValid = await bcrypt.compare(credentials.password, user.password);
+
+                if (!isValid) {
+                    throw new Error("Invalid credentials");
+                }
+
+                return { id: user._id.toString(), name: user.name, email: user.email, image: user.image };
             }
         })
     ],
@@ -57,16 +70,32 @@ export const authOptions: AuthOptions = {
             try {
                 console.log(`[AUTH] Sign-in (${account?.provider}): ${user.email} (${user.name})`);
                 await connectToDatabase();
-                const savedUser = await User.findOneAndUpdate(
-                    { email: user.email },
-                    {
-                        name: user.name || user.email.split('@')[0],
-                        image: user.image,
-                        lastLogin: new Date()
-                    },
-                    { upsert: true, new: true }
-                );
-                console.log(`[AUTH] Profile Sync OK: ${savedUser.email}`);
+
+                // For Google Auth, update/create user
+                if (account?.provider === 'google') {
+                    const savedUser = await User.findOneAndUpdate(
+                        { email: user.email },
+                        {
+                            name: user.name || user.email?.split('@')[0],
+                            image: user.image,
+                            lastLogin: new Date()
+                        },
+                        { upsert: true, new: true }
+                    );
+
+                    // Send notification if it's a new login
+                    await sendLoginNotification(user.email!, user.name!, 'Google');
+                    console.log(`[AUTH] Profile Sync OK: ${savedUser.email}`);
+                } else if (account?.provider === 'credentials') {
+                    // For credentials, just update last login
+                    await User.findOneAndUpdate(
+                        { email: user.email },
+                        { lastLogin: new Date() }
+                    );
+                    // Send notification
+                    await sendLoginNotification(user.email!, user.name!, 'Password');
+                }
+
                 return true;
             } catch (error) {
                 console.error("[AUTH] Profile Sync Failed:", error);

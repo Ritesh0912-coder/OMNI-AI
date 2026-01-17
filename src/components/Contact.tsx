@@ -37,18 +37,18 @@ export default function Contact() {
     };
 
     return (
-        <section id="contact" className="py-24 relative overflow-hidden">
+        <section id="contact" className="py-16 md:py-24 relative overflow-hidden">
             {/* Background Noise/Texture */}
             <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5 pointer-events-none" />
 
-            <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+            <div className="max-w-7xl mx-auto px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-16 items-center">
 
                 {/* Left: Brain Visual Placeholder */}
                 <motion.div
                     initial={{ opacity: 0, scale: 0.8 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
-                    className="relative h-[500px] flex items-center justify-center font-black"
+                    className="relative h-[300px] md:h-[400px] lg:h-[500px] flex items-center justify-center font-black order-2 lg:order-1"
                 >
                     <div className="relative w-full h-full max-w-md flex items-center justify-center">
                         <Image
@@ -66,10 +66,11 @@ export default function Contact() {
                     initial={{ opacity: 0, x: 30 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
+                    className="order-1 lg:order-2"
                 >
-                    <div className="mb-8 text-center lg:text-left">
-                        <span className="text-primary text-sm font-bold uppercase tracking-widest">Contact Us</span>
-                        <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mt-2 uppercase tracking-tight">Tell Us Your Goals</h2>
+                    <div className="mb-6 md:mb-8 text-center lg:text-left">
+                        <span className="text-primary text-xs md:text-sm font-bold uppercase tracking-widest">Enterprise Consulting</span>
+                        <h2 className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-black text-white mt-2 uppercase tracking-tight">Transform Your Business Intelligence</h2>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">

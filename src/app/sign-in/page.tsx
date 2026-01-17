@@ -13,7 +13,12 @@ export default function SignInPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [name, setName] = useState("");
+    const [isRegister, setIsRegister] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [code, setCode] = useState("");
+    const [codeSent, setCodeSent] = useState(false);
 
     useEffect(() => {
         if (status === "authenticated") {
@@ -21,15 +26,87 @@ export default function SignInPage() {
         }
     }, [status, router]);
 
+    const sendVerification = async () => {
+        if (!email) {
+            setError("Please enter your email first.");
+            return;
+        }
+
+        setLoading(true);
+        setError("");
+
+        try {
+            const res = await fetch('/api/auth/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to send verification code');
+            }
+
+            setCodeSent(true);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleCredentialsLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        await signIn("credentials", {
-            email,
-            password,
-            callbackUrl: "/chat",
-        });
-        setLoading(false);
+        setError("");
+
+        try {
+            if (isRegister) {
+                // Register flow
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, code }),
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Registration failed');
+                }
+
+                // Auto login after registration
+                const result = await signIn("credentials", {
+                    email,
+                    password,
+                    redirect: false,
+                });
+
+                if (result?.error) {
+                    throw new Error(result.error);
+                }
+
+                router.push("/chat");
+            } else {
+                // Login flow
+                const result = await signIn("credentials", {
+                    email,
+                    password,
+                    redirect: false,
+                });
+
+                if (result?.error) {
+                    throw new Error("Invalid credentials. Access Denied.");
+                }
+
+                router.push("/chat");
+            }
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -80,19 +157,91 @@ export default function SignInPage() {
                                 </div>
                             </div>
 
+                            {/* Sign In / Sign Up Toggle */}
+                            <div className="flex items-center justify-center gap-0 bg-white/5 rounded-2xl p-1 border border-white/10">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsRegister(false);
+                                        setError('');
+                                        setCodeSent(false);
+                                        setCode('');
+                                    }}
+                                    className={`flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all ${!isRegister
+                                        ? 'bg-primary text-black shadow-[0_0_20px_rgba(0,255,102,0.3)]'
+                                        : 'text-gray-500 hover:text-white'
+                                        }`}
+                                >
+                                    Sign In
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsRegister(true);
+                                        setError('');
+                                    }}
+                                    className={`flex-1 py-3 rounded-xl font-black uppercase tracking-widest text-xs transition-all ${isRegister
+                                        ? 'bg-primary text-black shadow-[0_0_20px_rgba(0,255,102,0.3)]'
+                                        : 'text-gray-500 hover:text-white'
+                                        }`}
+                                >
+                                    Sign Up
+                                </button>
+                            </div>
+
                             {/* Credentials Form */}
                             <form onSubmit={handleCredentialsLogin} className="space-y-4">
+                                {isRegister && (
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-colors"
+                                            placeholder="Your Name"
+                                        />
+                                    </div>
+                                )}
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Secure ID</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-colors"
-                                        placeholder="Identification handle"
-                                    />
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Email ID</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="email"
+                                            required
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            disabled={codeSent}
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-colors disabled:opacity-50"
+                                            placeholder="Email ID"
+                                        />
+                                        {isRegister && !codeSent && (
+                                            <button
+                                                type="button"
+                                                onClick={sendVerification}
+                                                disabled={loading || !email}
+                                                className="px-4 rounded-xl bg-white/10 text-xs font-bold uppercase hover:bg-white/20 transition-colors disabled:opacity-50"
+                                            >
+                                                Verify
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
+                                {isRegister && codeSent && (
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-primary uppercase tracking-widest ml-1">Verification Code</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            value={code}
+                                            onChange={(e) => setCode(e.target.value)}
+                                            className="w-full bg-primary/10 border border-primary/30 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary transition-colors text-center tracking-[0.5em] font-bold"
+                                            placeholder="000000"
+                                            maxLength={6}
+                                        />
+                                    </div>
+                                )}
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Access Key</label>
                                     <input
@@ -101,15 +250,18 @@ export default function SignInPage() {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-white focus:outline-none focus:border-primary/50 transition-colors"
-                                        placeholder="••••••••"
+                                        placeholder="Enter strong password"
                                     />
                                 </div>
+
+                                {error && <p className="text-red-500 text-xs font-bold text-center">{error}</p>}
+
                                 <button
                                     disabled={loading}
                                     type="submit"
                                     className="w-full py-4 rounded-xl bg-primary/10 text-primary border border-primary/30 hover:bg-primary hover:text-black transition-all font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 group disabled:opacity-50"
                                 >
-                                    {loading ? "Verifying..." : "Access System"}
+                                    {loading ? "Processing..." : (isRegister ? "Initialize Identity" : "Access System")}
                                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                                 </button>
                             </form>

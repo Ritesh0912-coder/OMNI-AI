@@ -6,21 +6,21 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 const contactInfo = [
     {
         icon: <Phone className="w-6 h-6 text-primary" />,
-        title: "Call Us",
-        value: "+1 234 567 890",
-        desc: "Mon-Fri from 8am to 6pm"
+        title: "Enterprise Solutions",
+        value: "+1 (555) SYNAPSE",
+        desc: "Direct line for strategic inquiries"
     },
     {
         icon: <MapPin className="w-6 h-6 text-primary" />,
-        title: "Our Location",
-        value: "Oxford Street, London",
-        desc: "United Kingdom, W1D 1BS"
+        title: "Global Operations",
+        value: "Tech District, London",
+        desc: "Serving clients across 50+ countries"
     },
     {
         icon: <Mail className="w-6 h-6 text-primary" />,
         title: "Email Us",
-        value: "hello@synapse-ai.com",
-        desc: "We'll respond within 24 hours"
+        value: "enterprise@synapse-ai.com",
+        desc: "24/7 Strategic Support Response"
     }
 ];
 
