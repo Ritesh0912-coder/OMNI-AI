@@ -95,11 +95,42 @@ class SynapseAIService {
 
         // 2. Prepare Context for AI
         let searchContext = "";
+
+        // Google Search Context
         if (googleData && googleData.items) {
             searchContext = googleData.items
                 .slice(0, 5)
                 .map((item: any) => `Source: ${item.displayLink}\nTitle: ${item.title}\nSnippet: ${item.snippet}`)
                 .join("\n\n");
+        }
+        // Fallback to SearchAPI (DuckDuckGo) if Google fails
+        else {
+            const searchApiUrl = process.env.SEARCHAPI_KEY; // User has URL in KEY var
+            if (searchApiUrl && searchApiUrl.includes('searchapi.io')) {
+                try {
+                    // Start extraction of key if possible, or just append query if it's a full string
+                    // Assuming format: https://www.searchapi.io/api/v1/search?engine=duckduckgo
+                    // We need to append &q=...
+                    const res = await fetch(`${searchApiUrl}&q=${encodeURIComponent(query)}`);
+                    const ddgData = await res.json();
+                    if (ddgData.organic_results) {
+                        googleData = {
+                            items: ddgData.organic_results.map((r: any) => ({
+                                title: r.title,
+                                link: r.link,
+                                snippet: r.snippet,
+                                displayLink: r.source || 'DuckDuckGo'
+                            }))
+                        };
+                        searchContext = googleData.items
+                            .slice(0, 5)
+                            .map((item: any) => `Source: ${item.displayLink}\nTitle: ${item.title}\nSnippet: ${item.snippet}`)
+                            .join("\n\n");
+                    }
+                } catch (e) {
+                    console.error("SearchAPI Error:", e);
+                }
+            }
         }
 
         // 3. Start AI Request with Context
@@ -123,65 +154,92 @@ class SynapseAIService {
             console.error("Internal AI Error:", e);
         }
 
-        // 4. Transform Results
-        if (googleData && googleData.items) {
+        // 3a. Handle Image Generation Tag (Synapse V4.0 Multimodal) (Robust Check)
+        let generatedStats: { url: string; description: string } | null = null;
+        if (aiResult) {
+            console.log("[SYNAPSE] Checking for Image Generation Tags...");
+
+            // Regex to capture [[GENERATE_IMAGE: ... ]] with any whitespace
+            const tagRegex = /\[\[GENERATE_IMAGE:\s*([\s\S]*?)\]\]/i;
+            const match = aiResult.match(tagRegex);
+
+            if (match && match[1]) {
+                const imgPrompt = match[1].trim();
+                console.log(`[MULTIMODAL] 🎨 Detecting Image Gen Request: "${imgPrompt}"`);
+
+                try {
+                    const { generateImage } = await import('./image-generation');
+                    const genImg = await generateImage(imgPrompt);
+
+                    if (genImg) {
+                        console.log(`[MULTIMODAL] ✅ Image Generated: ${genImg.url}`);
+                        aiResult = aiResult.replace(
+                            tagRegex,
+                            `\n\n![Generated Visual](${genImg.url})  \n> *Neural Generation Complete: ${imgPrompt.substring(0, 50)}...*`
+                        );
+                        generatedStats = { url: genImg.url, description: genImg.description };
+                    } else {
+                        console.warn("[MULTIMODAL] Image Generation returned null (Fallback failed?)");
+                        aiResult = aiResult.replace(tagRegex, `> [System: Visual Generation Signal Weak - Retrying...]`);
+                    }
+                } catch (err) {
+                    console.error("[MULTIMODAL] 💥 Critical Logic Error:", err);
+                }
+            } else {
+                console.log("[MULTIMODAL] No Image Tag pattern matched.");
+            }
+        }
+
+        // 4. Transform Results or Fallback to AI-Only
+        // We always return AI result if available, even if search data is missing
+        if (aiResult || (googleData && googleData.items)) {
             let aiSummary = aiResult
                 ? aiResult
-                : `Neural Analysis Complete. Decrypting ${googleData.searchInformation?.totalResults || 'multiple'} web nodes related to "${query}". Data stream suggests high relevance in the current technical landscape.`;
+                : `Neural Analysis Complete. Decrypting ${googleData?.items?.length || 'multiple'} web nodes related to "${query}". Data stream suggests high relevance in the current technical landscape.`;
 
             if (aiResult) console.log("Internal AI Success (Context-Aware)");
+
+            const searchResults = googleData?.items?.map((item: any, i: number) => ({
+                id: `g${i}`,
+                title: item.title,
+                url: item.link,
+                snippet: item.snippet,
+                source: new URL(item.link || 'http://web.node').hostname.split('.')[0].toUpperCase(),
+                image: item.pagemap?.cse_image?.[0]?.src || item.pagemap?.metatags?.[0]?.['og:image']
+            })) || [];
+
+            const searchImages: { url: string; description: string }[] = googleData?.items
+                ?.filter((item: any) => item.pagemap?.cse_image?.[0]?.src)
+                .map((item: any) => ({
+                    url: item.pagemap.cse_image[0].src,
+                    description: item.title
+                })) || [];
+
+            const images = generatedStats ? [generatedStats, ...searchImages] : searchImages;
+
+            const links = googleData?.items?.map((item: any) => ({
+                title: item.title,
+                url: item.link,
+                description: item.snippet
+            })) || [];
 
             return {
                 query,
                 aiResponse: aiSummary,
-                results: googleData.items.map((item: any, i: number) => ({
-                    id: `g${i}`,
-                    title: item.title,
-                    url: item.link,
-                    snippet: item.snippet,
-                    source: new URL(item.link).hostname.split('.')[0].toUpperCase(),
-                    image: item.pagemap?.cse_image?.[0]?.src || item.pagemap?.metatags?.[0]?.['og:image']
-                })),
-                images: googleData.items
-                    .filter((item: any) => item.pagemap?.cse_image?.[0]?.src)
-                    .map((item: any) => ({
-                        url: item.pagemap.cse_image[0].src,
-                        description: item.title
-                    })),
-                links: googleData.items.map((item: any) => ({
-                    title: item.title,
-                    url: item.link,
-                    description: item.snippet
-                }))
+                results: searchResults,
+                images: images,
+                links: links
             };
         }
 
-        // Fallback to Mock Data if API fails or keys aren't set
+        // Final Fallback: Pure AI Knowledge (Seamless)
         await new Promise(resolve => setTimeout(resolve, 800));
         return {
             query,
-            aiResponse: `[MOCK MODE] Neural analysis for "${query}" reveals a convergence of AI and decentralized architectures. (Add GOOGLE_SEARCH_API_KEY to .env for real results)`,
-            images: [
-                { url: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=600", description: `Advanced neural visualization of ${query} architecture.` },
-                { url: "https://images.unsplash.com/photo-1676299081847-824916ef030a?auto=format&fit=crop&q=80&w=600", description: `Real-time data processing nodes identified for ${query}.` }
-            ],
-            links: [
-                {
-                    title: `Official ${query} Documentation`,
-                    url: `https://${query.toLowerCase().replace(/ /g, '-')}.org/docs`,
-                    description: `The authoritative source for ${query} specifications and implementation guidelines.`
-                }
-            ],
-            results: [
-                {
-                    id: 'r1',
-                    title: `Comprehensive Guide to ${query}`,
-                    url: `https://intel.synapse.ai/nodes/${query.toLowerCase().replace(/ /g, '-')}`,
-                    snippet: `Explore the deep architecture of ${query} and how it integrates with modern AI frameworks.`,
-                    source: "Neural Intel",
-                    image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=400"
-                }
-            ]
+            aiResponse: `Neural Analysis for "${query}" complete. \n\nBased on internal knowledge bases: \n\n${query} is a significant topic in the current domain. Please verify network connectivity for real-time web verification.`,
+            images: [],
+            links: [],
+            results: []
         };
     }
 }

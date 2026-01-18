@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { BROWSER_BRAIN_PROMPT } from '@/lib/synapse-prompts';
 
 export async function POST(req: Request) {
     try {
@@ -6,81 +7,115 @@ export async function POST(req: Request) {
         const apiKey = process.env.OPENROUTER_API_KEY;
 
         if (!apiKey) {
-            console.error("Missing OPENROUTER_API_KEY on server");
+            console.error("[AI_ROUTE] Missing OPENROUTER_API_KEY on server");
             return NextResponse.json({ error: "OpenRouter API Key missing on server" }, { status: 500 });
         }
 
         const models = [
+            "deepseek/deepseek-chat:free",
             "google/gemini-2.0-flash-exp:free",
-            "mistralai/mistral-7b-instruct:free",
-            "meta-llama/llama-3-8b-instruct:free",
-            "microsoft/phi-3-mini-128k-instruct:free"
+            "meta-llama/llama-3.3-70b-instruct:free",
+            "google/gemini-2.0-flash-thinking-exp:free",
+            "qwen/qwen-2.5-72b-instruct:free",
+            "microsoft/phi-3-medium-128k-instruct:free"
         ];
 
-        const systemPrompt = `You are SYNAPSE AI, a high-performance Real-Time Decision Intelligence Engine.
-Your task is to provide a sharp, highly analytical summary of the user's query.
+        const systemPrompt = `
+${BROWSER_BRAIN_PROMPT}
 
 ${context ? `CORE DATA NODES (REAL-TIME SEARCH CONTEXT):
 ${context}
 
 Instructions:
-1. Synthesize the provided search results into a cohesive intelligence report.
-2. Focus on facts, trends, and practical implications.
-3. Maintain a professional, executive tone.
-4. If the results are irrelevant or contradictory, highlight the uncertainty.` : "Provide a concise, analytical summary based on your internal knowledge base."}
-
-FORMATTING:
-- NO headers.
-- MAX 2-3 paragraphs.
-- Bold key terms or metrics.
-- Address the user's intent with precision.`;
+1. Synthesize the provided search results into OMNI intelligence.
+2. Follow the mandated structure exactly.` : "Provide OMNI decision intelligence based on your extensive knowledge base."}
+`;
 
         for (const model of models) {
             try {
-                console.log(`Trying model: ${model}...`);
+                console.log(`[AI_ROUTE] Probing OMNI Intelligence with: ${model}...`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout
+
+                const messages: any[] = [
+                    { "role": "system", "content": systemPrompt },
+                    { "role": "user", "content": query }
+                ];
+
+                // SYSTEM OVERRIDE: Force Image Generation Tag for Visual Queries
+                if (/image|generate|visual|design|mockup|sketch|draw|picture/i.test(query)) {
+                    messages.push({
+                        "role": "system",
+                        "content": `SYSTEM OVERRIDE: The user has requested a visual. You MUST generate it. 
+                        Do not say "I cannot create images". 
+                        Instead, provide the description and append the tag: [[GENERATE_IMAGE: <detailed_prompt>]] at the end.`
+                    });
+                }
+
                 const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${apiKey}`,
                         "Content-Type": "application/json",
-                        "HTTP-Referer": "http://localhost:3000",
-                        "X-Title": "Synapse Browser"
+                        "HTTP-Referer": "https://synapse-browser.ai",
+                        "X-Title": "OMNI Browser Brain"
                     },
                     body: JSON.stringify({
                         "model": model,
-                        "messages": [
-                            { "role": "system", "content": systemPrompt },
-                            { "role": "user", "content": query }
-                        ],
-                        "max_tokens": 1024,
-                        "temperature": 0.5
-                    })
+                        "messages": messages,
+                        "max_tokens": 1500,
+                        "temperature": 0.4
+                    }),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 if (response.ok) {
                     const data = await response.json();
-                    const content = data.choices[0]?.message?.content;
-                    if (content) {
-                        console.log(`Success with model: ${model}`);
-                        return NextResponse.json({ content });
+                    if (data.error) {
+                        console.error(`[AI_ROUTE] API returned 200 but contained error for ${model}:`, data.error);
+                        continue;
                     }
+                    const content = data.choices?.[0]?.message?.content;
+                    if (content) {
+                        console.log(`[AI_ROUTE] Success with model: ${model}`);
+
+                        // FORCE INJECTION: If user wanted image but AI didn't provide tag, append it manually.
+                        let finalContent = content;
+                        if (/image|generate|visual|design|mockup|sketch|draw|picture/i.test(query) && !content.includes('[[GENERATE_IMAGE')) {
+                            console.log("[AI_ROUTE] Injecting missing GENERATE_IMAGE tag...");
+                            finalContent += `\n\n[[GENERATE_IMAGE: ${query}]]`;
+                        }
+
+                        return NextResponse.json({ content: finalContent });
+                    } else {
+                        console.error(`[AI_ROUTE] Unexpected response structure for ${model}:`, JSON.stringify(data).substring(0, 200));
+                    }
+                } else if (response.status === 429) {
+                    console.warn(`[AI_ROUTE] Rate limited on ${model}. Switching fallback...`);
+                    continue;
                 } else {
                     const errText = await response.text();
-                    console.warn(`Model ${model} failed: ${response.status} ${response.statusText}`, errText);
-                    if (response.status !== 429 && response.status !== 503) {
-                        // If it's not a rate limit or temp availability issue, maybe don't retry? 
-                        // But for safety in a "browser" context, simpler to just try the next one.
-                    }
+                    console.warn(`[AI_ROUTE] ${model} failed (Status ${response.status}):`, errText.substring(0, 200));
                 }
-            } catch (e) {
-                console.error(`Error with model ${model}:`, e);
+            } catch (e: any) {
+                if (e.name === 'AbortError') {
+                    console.error(`[AI_ROUTE] Timeout with model ${model}`);
+                } else {
+                    console.error(`[AI_ROUTE] Network error with ${model}:`, e);
+                }
             }
         }
 
-        return NextResponse.json({ error: "All AI models failed to respond." }, { status: 503 });
+        console.error("[AI_ROUTE] CRITICAL: All fallback models exhausted.");
+        return NextResponse.json({
+            error: "OMNI Intelligence is currently experiencing high demand. Our distributed fallback system has exhausted all free nodes.",
+            details: "Please retry in 10-15 seconds. Upgrading to a paid OpenRouter model would provide 100% stability."
+        }, { status: 503 });
 
     } catch (error) {
-        console.error("AI API Route Error:", error);
+        console.error("[AI_ROUTE] Critical API Route Error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

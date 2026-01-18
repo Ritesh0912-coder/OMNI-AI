@@ -5,7 +5,7 @@
 import CreateTeamModal from "@/components/CreateTeamModal";
 import InviteModal from "@/components/InviteModal";
 import GroupSettingsModal from "@/components/GroupSettingsModal";
-import { Bot, UserPlus, ArrowRight, Loader2, AlertCircle, Clock, Bell, X, Users, Settings, LogOut, Copy, RotateCcw, History, MessageSquare, Plus, User, Trash2, MoreVertical, Shield, ImagePlus } from 'lucide-react';
+import { Bot, UserPlus, ArrowRight, Loader2, AlertCircle, Clock, Bell, X, Users, Settings, LogOut, Copy, RotateCcw, History, MessageSquare, Plus, User, Trash2, MoreVertical, Shield, ImagePlus, Download, Share2, Maximize2 } from 'lucide-react';
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import LightRays from "@/components/ui/LightRays";
@@ -60,6 +60,7 @@ export default function ChatPage() {
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
     const [groupHistories, setGroupHistories] = useState<Record<string, any[]>>({});
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [viewingImage, setViewingImage] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -1017,34 +1018,98 @@ export default function ChatPage() {
                                             })() : (
                                                 <>
                                                     {msg.image && (
-                                                        <div className="mb-4 relative group/neural-asset">
-                                                            <div className="absolute -inset-1 bg-primary/20 rounded-2xl blur-lg opacity-0 group-hover/neural-asset:opacity-100 transition-opacity duration-700" />
-                                                            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm group/frame">
-                                                                <img src={msg.image} alt="Neural Visual Asset" className="w-full h-full object-cover grayscale-[0.3] group-hover/frame:grayscale-0 transition-all duration-700 scale-[1.02] group-hover/frame:scale-100" />
-                                                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-60" />
-                                                                {/* Scanning Line Effect - Only active during processing of latest user message */}
+                                                        <div className="flex flex-col md:flex-row gap-6 mb-4">
+                                                            {/* Image Container */}
+                                                            <div className="relative group/neural-asset flex-shrink-0 w-full md:w-64 max-w-sm rounded-2xl overflow-hidden border border-white/10 bg-black/40 backdrop-blur-sm shadow-2xl h-fit">
+                                                                <div
+                                                                    className="relative w-full aspect-square cursor-pointer overflow-hidden"
+                                                                    onClick={() => setViewingImage(msg.image || null)}
+                                                                >
+                                                                    <img
+                                                                        src={msg.image}
+                                                                        alt="Neural Visual Asset"
+                                                                        className="w-full h-full object-cover transition-transform duration-700 group-hover/neural-asset:scale-105"
+                                                                    />
+
+                                                                    {/* Hover Overlay */}
+                                                                    <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black via-black/80 to-transparent translate-y-full group-hover/neural-asset:translate-y-0 transition-transform duration-300 flex items-center justify-center gap-4">
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                copyToClipboard(msg.image!);
+                                                                                alert('Visual signal encrypted to clipboard.');
+                                                                            }}
+                                                                            className="p-2 rounded-full bg-white/10 hover:bg-white/20 hover:text-primary transition-colors border border-white/5"
+                                                                            title="Copy Signal"
+                                                                        >
+                                                                            <Copy className="w-4 h-4" />
+                                                                        </button>
+                                                                        <a
+                                                                            href={msg.image}
+                                                                            download={`synapse-visual-${Date.now()}.png`}
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            className="p-2 rounded-full bg-white/10 hover:bg-white/20 hover:text-blue-400 transition-colors border border-white/5"
+                                                                            title="Extract Asset"
+                                                                        >
+                                                                            <Download className="w-4 h-4" />
+                                                                        </a>
+                                                                        <button
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                if (navigator.share) {
+                                                                                    navigator.share({
+                                                                                        title: 'Synapse Visual Intelligence',
+                                                                                        text: 'Neural visualization intercepted.',
+                                                                                        url: msg.image
+                                                                                    });
+                                                                                } else {
+                                                                                    copyToClipboard(msg.image!);
+                                                                                    alert('Link copied to clipboard.');
+                                                                                }
+                                                                            }}
+                                                                            className="p-2 rounded-full bg-white/10 hover:bg-white/20 hover:text-green-400 transition-colors border border-white/5"
+                                                                            title="Broadcast Signal"
+                                                                        >
+                                                                            <Share2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+
+                                                                    {/* Click Hint */}
+                                                                    <div className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 backdrop-blur opacity-0 group-hover/neural-asset:opacity-100 transition-opacity pointer-events-none border border-white/10">
+                                                                        <Maximize2 className="w-3 h-3 text-white/70" />
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Scanning Line Effect */}
                                                                 {isLoading && i === filteredArray.length - 1 && (
                                                                     <>
-                                                                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-primary/40 shadow-[0_0_10px_#00ff66] animate-[scan_3s_linear_infinite]" />
-                                                                        <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+                                                                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-primary/40 shadow-[0_0_10px_#00ff66] animate-[scan_3s_linear_infinite] pointer-events-none" />
+                                                                        <div className="absolute bottom-2 left-2 flex items-center gap-1.5 pointer-events-none">
                                                                             <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                                                                             <span className="text-[7px] font-black text-white/50 uppercase tracking-[0.2em]">Neural Signal Lock</span>
                                                                         </div>
                                                                     </>
                                                                 )}
                                                             </div>
+
+                                                            {/* Side-by-side Description */}
+                                                            <div className="flex-grow flex flex-col justify-center min-w-0">
+                                                                <div className="prose prose-invert prose-p:leading-snug prose-p:text-sm prose-p:text-gray-400 line-clamp-6">
+                                                                    <FormattedMessage content={msg.content} />
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     )}
-                                                    {((msg as any).tool_calls && (msg as any).tool_calls[0]?.function?.name === 'show_stock_chart') ? (() => {
+                                                    {/* Only Render Standard Text Content if NO Image (to avoid duplication since we moved it above) */}
+                                                    {!msg.image && <FormattedMessage content={msg.content} />}
+                                                    {((msg as any).tool_calls && (msg as any).tool_calls[0]?.function?.name === 'show_stock_chart') && (() => {
                                                         try {
                                                             const args = JSON.parse((msg as any).tool_calls[0].function.arguments);
                                                             return <TradingViewChart symbol={args.symbol} interval={args.interval} />;
                                                         } catch (e) {
                                                             return <div className="text-red-500 text-[10px] font-mono">Chart Transmission Corrupted</div>;
                                                         }
-                                                    })() : (
-                                                        <FormattedMessage content={msg.content} />
-                                                    )}
+                                                    })()}
                                                 </>
                                             )}
 
@@ -1121,16 +1186,34 @@ export default function ChatPage() {
                                         exit={{ opacity: 0, y: 10, scale: 0.9 }}
                                         className="absolute bottom-full left-0 mb-6 p-1.5 bg-black/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] group/preview z-30"
                                     >
-                                        <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-white/10 group-hover/preview:border-primary/50 transition-colors">
+                                        <div className={`relative w-20 h-20 rounded-xl overflow-hidden border transition-colors ${isLoading ? 'border-primary/50' : 'border-white/10 group-hover/preview:border-primary/50'}`}>
                                             <img src={selectedImage} alt="Preview" className="w-full h-full object-cover" />
-                                            <button
-                                                onClick={() => setSelectedImage(null)}
-                                                className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/50 hover:text-primary hover:bg-black transition-all opacity-0 group-hover/preview:opacity-100"
-                                                title="Remove Signal"
-                                            >
-                                                <X className="w-3 h-3" />
-                                            </button>
+
+                                            {/* Scanning Effect During Analysis */}
+                                            {isLoading && (
+                                                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/20 to-transparent animate-scan pointer-events-none" />
+                                            )}
+
+                                            {!isLoading && (
+                                                <button
+                                                    onClick={() => setSelectedImage(null)}
+                                                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white/50 hover:text-primary hover:bg-black transition-all opacity-0 group-hover/preview:opacity-100"
+                                                    title="Remove Signal"
+                                                >
+                                                    <X className="w-3 h-3" />
+                                                </button>
+                                            )}
                                         </div>
+
+                                        {/* Analysis Status */}
+                                        {isLoading && (
+                                            <div className="mt-2 px-2 py-1 bg-primary/10 rounded-lg border border-primary/20">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                                                    <span className="text-[9px] font-bold text-primary uppercase tracking-widest">Analyzing Visual Data...</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -1589,6 +1672,42 @@ export default function ChatPage() {
                     />
                 )
             }
+            {/* Lightbox Modal */}
+            <AnimatePresence>
+                {viewingImage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setViewingImage(null)}
+                        className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-8 active:cursor-zoom-out"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="relative max-w-7xl max-h-full rounded-2xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,1)] border border-white/10"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <img
+                                src={viewingImage}
+                                alt="Full Resolution Asset"
+                                className="max-w-full max-h-[90vh] object-contain"
+                            />
+                            <button
+                                onClick={() => setViewingImage(null)}
+                                className="absolute top-4 right-4 p-2 rounded-full bg-black/50 hover:bg-white/10 text-white transition-colors border border-white/10"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                            <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-black via-black/60 to-transparent flex justify-center gap-4">
+                                <button onClick={() => { copyToClipboard(viewingImage); alert('Image copied.'); }} className="px-6 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-xs font-black uppercase tracking-widest text-white transition-all flex items-center gap-2"><Copy className="w-4 h-4" /> Copy</button>
+                                <a href={viewingImage} download={`synapse-hq-${Date.now()}.png`} className="px-6 py-2 rounded-xl bg-primary text-black font-black uppercase tracking-widest hover:bg-white transition-all flex items-center gap-2"><Download className="w-4 h-4" /> Download</a>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </main>
     );
 }
@@ -1731,6 +1850,10 @@ function FormattedMessage({ content }: { content: string }) {
                             h3: ({ node, ...props }) => <h3 className="text-md font-bold text-gray-200 mt-4 mb-2 uppercase tracking-wide border-l-2 border-primary/50 pl-3" {...props} />,
                             code: ({ node, ...props }) => <code className="bg-white/10 px-1.5 py-0.5 rounded text-primary font-mono text-xs" {...props} />,
                             blockquote: ({ node, ...props }) => <blockquote className="border-l-4 border-primary/30 pl-4 py-1 my-4 italic text-gray-400 bg-white/[0.02] rounded-r-lg" {...props} />,
+                            img: ({ node, ...props }) => {
+                                if (!props.src) return null;
+                                return <img {...props} className="rounded-xl border border-white/10 my-4 max-w-full shadow-lg" />;
+                            },
                         }}
                     >
                         {part.content}

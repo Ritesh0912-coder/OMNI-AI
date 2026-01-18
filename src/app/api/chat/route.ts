@@ -6,6 +6,7 @@ import Group from '@/models/Group';
 import OpenAI from 'openai';
 import { authOptions } from '@/lib/auth';
 import { BUSINESS_INTELLIGENCE_PROMPT, GROUP_MANAGER_PROMPT } from '@/lib/synapse-prompts';
+import { IMAGE_GENERATION_SYSTEM_PROMPT } from '@/lib/image-refinement-prompt';
 
 const isQubrid = false; // !!process.env.QUBRID_API_KEY;
 const isOpenRouter = !!process.env.OPENROUTER_API_KEY;
@@ -112,31 +113,65 @@ CRITICAL: You are now in GROUP INTELLIGENCE MODE. Focus on team decisions, share
     });
 
     // 3. Check for Image Generation Intent
-    const imageGenKeywords = ["generate image", "create image", "draw", "visualize", "make a picture", "generate chart"];
-    const isImageGeneration = imageGenKeywords.some(keyword => message?.toLowerCase().includes(keyword));
+    // Expanded regex for "logo", "chart", "workflow", "diagram", "icon", etc. + Hindi/Hinglish support
+    const imageGenRegex = /image|visual|design|mockup|sketch|draw|paint|picture|photo|canvas|render|illustrate|art|logo|icon|chart|graph|diagram|workflow|blueprint|infographic|poster|banner|flyer|scene|wallpaper|background|tasveer|chitra|banao|dikhao|karo|do|pic|img/i;
+    const isImageGeneration = imageGenRegex.test(message) || (/(generate|create|make|banao|dikhao).*(visual|view|look like|concept|ka|ki|ke|ko)/i.test(message));
 
     if (isImageGeneration) {
       try {
-        const imageClient = new OpenAI({
-          apiKey: process.env.IMAGE_GENERATION_API_KEY || 'missing_key',
-          baseURL: process.env.IMAGE_GENERATION_BASE_URL || "https://api.openai.com/v1", // Fallback or custom URL
+        const { generateImage } = await import('@/lib/image-generation');
+
+        // 1. EXPAND PROMPT using OMNI Image Generator AI Persona
+        console.log("[CHAT_ROUTE] 🎨 Expanding image prompt via LLM...");
+        const expansionModel = isQubrid ? "meta-llama/Meta-Llama-3.1-70B-Instruct" : "gpt-4o-mini";
+
+        const expansionCompletion = await openai.chat.completions.create({
+          model: expansionModel,
+          messages: [
+            { role: "system", content: IMAGE_GENERATION_SYSTEM_PROMPT },
+            { role: "user", content: message }
+          ],
+          temperature: 0.7,
+          max_tokens: 500
         });
 
-        const imageResponse = await imageClient.images.generate({
-          model: "dall-e-3", // Or specific model provided by apifree.ai
-          prompt: message,
-          n: 1,
-          size: "1024x1024",
-        });
+        const expandedText = expansionCompletion.choices?.[0]?.message?.content || message;
+        console.log("[CHAT_ROUTE] ✨ Expanded Prompt:", expandedText.substring(0, 100) + "...");
 
-        const imageUrl = imageResponse.data[0].url;
+        // 2. PARSE THE EXPANDED OUTPUT
+        const extractSection = (text: string, header: string) => {
+          const regex = new RegExp(`\\[${header}\\]\\s*([\\s\\S]*?)(?=\\[|$)`, 'i');
+          const match = text.match(regex);
+          return match ? match[1].trim() : "";
+        };
+
+        const mainPrompt = extractSection(expandedText, "MAIN IMAGE PROMPT") || message;
+        const styleTags = extractSection(expandedText, "STYLE TAGS");
+        const qualityBoost = extractSection(expandedText, "QUALITY BOOST");
+        const negativePrompt = extractSection(expandedText, "NEGATIVE PROMPT");
+        const caption = extractSection(expandedText, "CAPTION");
+
+        const finalPrompt = `${mainPrompt}${styleTags ? `, ${styleTags}` : ""}${qualityBoost ? `, ${qualityBoost}` : ""}`;
+
+        console.log("[CHAT_ROUTE] 🚀 Final Prompt to Engine:", finalPrompt);
+        if (negativePrompt) console.log("[CHAT_ROUTE] 🚫 Negative Prompt:", negativePrompt);
+
+        // 3. GENERATE IMAGE
+        const generated = await generateImage(finalPrompt, negativePrompt);
+
+        if (!generated) {
+          throw new Error("Image generation failed");
+        }
+
+        const imageUrl = generated.url;
 
         // Save AI Response with Image
-        const aiResponse = `Here is the visual representation based on your request: \n\n![Generated Image](${imageUrl})`;
+        // Use the localized caption if available, otherwise fallback to English format
+        const aiResponse = caption || `Here is the visual representation of:\n> *${mainPrompt}*`;
 
         currentChat.messages.push({
           role: 'ai',
-          content: "Strategic visualization complete. Asset analyzed and archived.",
+          content: aiResponse,
           image: imageUrl,
           senderName: 'SYNAPSE AI',
           timestamp: new Date()
@@ -194,14 +229,15 @@ CRITICAL: You are now in GROUP INTELLIGENCE MODE. Focus on team decisions, share
             SECURITY STATUS: ${encryption ? "ENCRYPTED" : "UNENCRYPTED CLEAR-NET"}. 
             Always identify as SYNAPSE AI. Your responses must be sharp, highly analytical, and expansive. 
             CRITICAL: You must NEVER truncate your output or stop mid-sentence. Ensure every thought is complete.
-            FORMATTING: Use Markdown (bolding, headers, bullet points) extensively to ensure maximum readability and professional structure.`
+            FORMATTING: Use Markdown (bolding, headers, bullet points) extensively to ensure maximum readability and professional structure.
+            LANGUAGE ADAPTABILITY: You must ALWAYS respond in the SAME LANGUAGE that the user is currently speaking. If the user speaks Hindi, respond in Hindi. If Hinglish, respond in Hinglish. Do not default to English unless the user speaks English.`
       },
       ...currentChat.messages.map((m: any) => {
-        if (m.image) {
+        if (m.image && m.role !== 'ai') {
           return {
-            role: m.role === 'ai' ? 'assistant' : 'user',
+            role: 'user',
             content: [
-              { type: 'text', text: m.content || (m.role === 'ai' ? "Visual intelligence report complete." : "Analyze this visual asset.") },
+              { type: 'text', text: m.content || "Analyze this visual asset." },
               { type: 'image_url', image_url: { url: m.image } }
             ]
           };
@@ -228,7 +264,7 @@ CRITICAL: You are now in GROUP INTELLIGENCE MODE. Focus on team decisions, share
       messages: openAIMessages,
       tools: isQubrid ? undefined : tools,
       tool_choice: isQubrid ? undefined : "auto",
-      max_tokens: 4096,
+      max_tokens: 1500, // Reduced to fit within remaining credits
       temperature: 0.7,
     });
 
@@ -299,11 +335,18 @@ CRITICAL: You are now in GROUP INTELLIGENCE MODE. Focus on team decisions, share
       const secondResponse = await openai.chat.completions.create({
         model: model,
         messages: openAIMessages,
-        max_tokens: 4096,
+        max_tokens: 1500, // Reduced to fit within remaining credits
         temperature: 0.7,
       });
 
       aiResponse = secondResponse.choices?.[0]?.message?.content || "Analysis complete.";
+    }
+
+    // FORCE IMAGE GENERATION TAG: If user requested visual but AI didn't provide tag
+    const userMessage = message.toLowerCase();
+    if (/image|generate|visual|design|mockup|sketch|draw|picture/i.test(userMessage) && !aiResponse.includes('[[GENERATE_IMAGE')) {
+      console.log("[CHAT_ROUTE] Injecting missing GENERATE_IMAGE tag...");
+      aiResponse += `\n\n[[GENERATE_IMAGE: ${message}]]`;
     }
 
     // 5. Add Final AI Message

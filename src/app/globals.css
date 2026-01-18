@@ -13,6 +13,7 @@
   --animate-float: float 6s ease-in-out infinite;
   --animate-glow: glow 3s ease-in-out infinite alternate;
   --animate-slide-up: slideUp 0.8s ease-out forwards;
+  --animate-scan: scan 3s linear infinite;
 
   @keyframes float {
 
