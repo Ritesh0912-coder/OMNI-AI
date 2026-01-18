@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import connectToDatabase from '@/lib/mongodb';
 import Chat from '@/models/Chat';
 import Group from '@/models/Group';
+import User from '@/models/User';
 import OpenAI from 'openai';
 import { authOptions } from '@/lib/auth';
 import { BUSINESS_INTELLIGENCE_PROMPT, GROUP_MANAGER_PROMPT } from '@/lib/synapse-prompts';
@@ -38,6 +39,25 @@ export async function POST(req: NextRequest) {
     const encryption = settings?.encryption !== false;
 
     await connectToDatabase();
+
+    // QUOTA CHECK
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: 'User profile not found.' }, { status: 404 });
+    }
+
+    // ADMIN BYPASS: coder9184@gmail.com
+    const isAdmin = session.user.email === 'coder9184@gmail.com';
+
+    /* QUOTA DISABLED GLOBALLY
+    if (!isAdmin && user.usage.count >= user.usage.limit) {
+      return NextResponse.json({
+        error: 'Quota exhausted. Upgrade to Premium.',
+        quotaExhausted: true,
+        usage: user.usage
+      }, { status: 403 });
+    }
+    */
 
     // Fetch Group Context if applicable
     let groupContext = "";
@@ -178,10 +198,15 @@ CRITICAL: You are now in GROUP INTELLIGENCE MODE. Focus on team decisions, share
         });
         await currentChat.save();
 
+        // Increment Usage
+        user.usage.count += 1;
+        await user.save();
+
         return NextResponse.json({
           response: aiResponse,
           chatId: currentChat._id,
-          messages: currentChat.messages
+          messages: currentChat.messages,
+          usage: user.usage
         });
 
       } catch (error) {
@@ -359,10 +384,15 @@ CRITICAL: You are now in GROUP INTELLIGENCE MODE. Focus on team decisions, share
     console.log(`[CHAT_SAVE] ID: ${currentChat._id}, userId: ${currentChat.userId}, groupId: ${currentChat.groupId}`);
     await currentChat.save();
 
+    // Increment Usage
+    user.usage.count += 1;
+    await user.save();
+
     return NextResponse.json({
       response: aiResponse,
       chatId: currentChat._id,
-      messages: currentChat.messages
+      messages: currentChat.messages,
+      usage: user.usage
     });
 
   } catch (error) {

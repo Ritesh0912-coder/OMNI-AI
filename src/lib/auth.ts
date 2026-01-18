@@ -103,6 +103,12 @@ export const authOptions: AuthOptions = {
             }
         },
         async session({ session }: any) {
+            await connectToDatabase();
+            const user = await User.findOne({ email: session.user.email });
+            if (user) {
+                session.user.id = user._id.toString();
+                session.user.usage = user.usage;
+            }
             return session;
         },
     },

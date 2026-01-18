@@ -15,7 +15,11 @@ const UserSchema: Schema = new Schema({
     image: { type: String },
     password: { type: String, select: false }, // Don't return password by default
     createdAt: { type: Date, default: Date.now },
-    lastLogin: { type: Date, default: Date.now }
+    lastLogin: { type: Date, default: Date.now },
+    usage: {
+        count: { type: Number, default: 0 },
+        limit: { type: Number, default: 10 }
+    }
 });
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

@@ -36,7 +36,7 @@ export default function ChatPage() {
         encryption: true,
         highLowRes: 'high'
     });
-    const [promptsRemaining, setPromptsRemaining] = useState(50);
+    const [promptsRemaining, setPromptsRemaining] = useState(10);
     const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
     const [isChatting, setIsChatting] = useState(false);
     const [chatId, setChatId] = useState<string | null>(null);
@@ -124,6 +124,13 @@ export default function ChatPage() {
             fetchNotifications();
             fetchGroups();
             fetchHistory(); // Default to personal
+
+            // Sync Usage from Session
+            if ((session.user as any).usage) {
+                const u = (session.user as any).usage;
+                setPromptsRemaining(Math.max(0, u.limit - u.count));
+            }
+
             // Poll every 30 seconds
             const interval = setInterval(() => {
                 fetchNotifications();
@@ -290,13 +297,26 @@ export default function ChatPage() {
                     });
                     setMessages(mergedMessages);
                     setChatId(data.chatId);
+
+                    // Update Quota from Backend
+                    if (data.usage) {
+                        setPromptsRemaining(Math.max(0, data.usage.limit - data.usage.count));
+                    }
+
                     if (activeGroup) {
                         fetchGroupHistory(activeGroup._id); // Update nested unit logs
                     } else {
                         fetchHistory(); // Update personal sidebar history
                     }
                 } else {
-                    alert(data.error || "Neural link failed.");
+                    if (data.quotaExhausted) {
+                        setIsUpgradeModalOpen(true);
+                        // Revert optimistic update
+                        setMessages(prev => prev.slice(0, -1));
+                        setPromptsRemaining(prev => Math.min(10, prev + 1)); // Revert count
+                    } else {
+                        alert(data.error || "Neural link failed.");
+                    }
                 }
             } else {
                 throw new Error("System transmission offline.");
@@ -1374,23 +1394,18 @@ export default function ChatPage() {
                                     <div className="space-y-4">
                                         <h4 className="text-[12px] font-black uppercase tracking-widest text-gray-400">Quota Allocation</h4>
                                         <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
-                                            <div className="justify-between items-end flex">
-                                                <div className="space-y-1">
-                                                    <span className="text-[11px] font-bold text-white uppercase tracking-tighter block">Free Tier Quota</span>
-                                                    <p className="text-[8px] text-gray-500 uppercase tracking-widest">Resets in 22:14:05</p>
+                                            <div className="flex flex-col gap-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[11px] font-bold text-primary uppercase tracking-tighter">Unlimited Phase</span>
+                                                    <Shield className="w-4 h-4 text-primary" />
                                                 </div>
-                                                <span className="text-[14px] font-black text-primary tracking-tighter">{promptsRemaining} <span className="text-[8px] text-gray-500">/ 50 PROMPTS</span></span>
+                                                <div className="w-full py-2 bg-primary/20 border border-primary/30 rounded-lg text-center text-[10px] font-black uppercase text-primary tracking-widest">
+                                                    ∞ Unlimited Neural Access
+                                                </div>
+                                                <p className="text-[8px] text-gray-500 text-center uppercase tracking-widest">
+                                                    Free Tier Limits Temporarily Lifted
+                                                </p>
                                             </div>
-                                            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: 0 }}
-                                                    animate={{ width: `${(promptsRemaining / 50) * 100}%` }}
-                                                    className="h-full bg-gradient-to-r from-primary to-primary/50 shadow-[0_0_10px_#00ff66]"
-                                                />
-                                            </div>
-                                            <Link href="/premium" className="w-full flex items-center justify-center py-2 bg-primary/10 hover:bg-primary/20 border border-primary/30 rounded-lg text-[9px] font-black text-primary uppercase tracking-[0.2em] transition-all">
-                                                Unlock Unlimited Access
-                                            </Link>
                                         </div>
                                     </div>
 
